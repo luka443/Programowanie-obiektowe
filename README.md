@@ -1,2 +1,2 @@
 # javaa
-sqight
+sqlight
