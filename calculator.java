@@ -1,37 +1,72 @@
-package lab1;
+package lab3;
 import java.awt.event.*;
 import java.awt.geom.RoundRectangle2D;
 import javax.swing.*;
 import java.awt.*;
-
-
 public class calculator{
 	static JTextField l;
 	static JFrame f;		
 	static String txt = "";
-	static int num;
+	static int num;	
+	static boolean mnozenie = false;
+	static boolean dzielenie = false;
+	static boolean odejmowanie = false;
 	public static void main(String args[]) {
-		
-		
-		class MyActionListener implements java.awt.event.ActionListener {						
-        	public void actionPerformed(ActionEvent e) {
-        		
+																			
+		class MyActionListener implements java.awt.event.ActionListener {			
+        	public void actionPerformed(ActionEvent e) {         		
         		String wysw = e.getActionCommand();
         		
         		if(wysw == "C") {
         			l.setText("0");
-        			txt="";
+        			txt="0";
         		}
-        		else if(wysw=="+") {
-        			num =Integer.parseInt(txt);
+        		else if(wysw=="+") {     
+        			num =Integer.parseInt(l.getText());	        			
+        			txt ="";        			       			
+        		}
+        		else if(wysw =="-") {
+        			num = Integer.parseInt(l.getText());
+        			odejmowanie =true;
         			txt ="";
-        			System.out.println(num);
-        			
+        		}
+        		else if(wysw =="/") {
+        			num = Integer.parseInt(l.getText());
+        			dzielenie =true;
+        			txt ="";
+        		}
+        		else if(wysw =="-") {
+        			num = Integer.parseInt(l.getText());
+        			odejmowanie = true;
+        			txt ="";
+        		}
+        		else if(wysw == "*"){
+        			num =Integer.parseInt(l.getText());	
+        			System.out.println(l.getText());
+        			mnozenie = true;
+        			txt= "";
         		}
         		else if(wysw =="=") {
         			int num2 = Integer.parseInt(txt) + num;
-        			System.out.println(num2);
-        			l.setText(Integer.toString(num2));
+        			int num1 =  num - Integer.parseInt(txt);
+        			int num3 = Integer.parseInt(l.getText()) * num;    
+        			
+        			if(mnozenie == true) {
+        				l.setText(Integer.toString(num3));
+        				mnozenie =false;
+        			}
+        			else if(odejmowanie == true) {
+        				l.setText(Integer.toString(num1));
+        				odejmowanie =false;
+        			}
+        			else if(dzielenie == true) {
+        				int num4 = Integer.parseInt(txt) / num;
+        				l.setText(Integer.toString(num4));
+        				dzielenie =false;
+        			}
+        			else {
+        				l.setText(Integer.toString(num2));
+        			}
         			txt ="";
         		}
         		else {
@@ -39,13 +74,12 @@ public class calculator{
         			l.setText(txt); 
         		}
         	}
-        } 
-		
+        } 			
         f = new JFrame("My First Calculator");
                     
         l = new JTextField(22);
         l.setBackground(Color.WHITE);
-        l.setEditable(false);
+        l.setEditable(false);       
         l.setFont(new Font("Arial Black", Font.BOLD,12));
         l.setHorizontalAlignment(SwingConstants.RIGHT);
         l.setText("0");               
@@ -68,10 +102,13 @@ public class calculator{
         ra.addActionListener(new MyActionListener());
         bs = new JButton("-");
         bs.setPreferredSize(new Dimension(60, 30));
+        bs.addActionListener(new MyActionListener());
         bd = new JButton("/");
         bd.setPreferredSize(new Dimension(60, 30));
+        bd.addActionListener(new MyActionListener());
         bm = new JButton("*");
         bm.setPreferredSize(new Dimension(60, 30));
+        bm.addActionListener(new MyActionListener());
         beq = new JButton("C");                 
         beq.setPreferredSize(new Dimension(60, 30));
         beq.addActionListener(new MyActionListener());
@@ -89,7 +126,5 @@ public class calculator{
         f.setResizable(false);
         f.setLocationRelativeTo(null);
         f.show();
-    }
-    
-    
+    }        
 }
