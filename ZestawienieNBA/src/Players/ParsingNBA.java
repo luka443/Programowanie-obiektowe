@@ -1,5 +1,8 @@
 package Players;
 
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
+import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -7,18 +10,29 @@ import org.jsoup.select.Elements;
 
 import javax.swing.*;
 import javax.swing.table.*;
+import javax.swing.text.TableView;
 import java.awt.*;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class ParsingNBA {
-    public static void main(String args[]) {
+    public static void main(String args[]) throws IOException {
 
 
         ArrayList<Integer> pointss = new ArrayList<>();
 
         ArrayList<String> namess = new ArrayList<>();
+
+        ArrayList<Integer> reboundss = new ArrayList<>();
 
         ArrayList<String> teamm= new ArrayList<>();
 
@@ -34,13 +48,20 @@ public class ParsingNBA {
 
         List<_NBA_> Plist= new ArrayList<_NBA_>();
 
+        //BasicConfigurator.configure();
+        Logger logger = LogManager.getLogger(ParsingNBA.class);
 
         final String url = "https://basketball.realgm.com/nba/stats/2023/Totals/Qualified/points/All/desc/1/Regular_Season";
 
+        Properties Props = new Properties();
 
         try {
             Document doc = Jsoup.connect(url).get();
+
+            logger.info("" +
+                    "Trying connect to: " + url + "... ... ...");
             Elements media = doc.select("table.tablesaw tbody tr");
+            logger.info("Parsing the content ...");
 
             for (Element ele : media) {
 
@@ -52,6 +73,7 @@ public class ParsingNBA {
                 String points = ele.child(5).text();
                 String threePointers = ele.child(9).text();
                 String percentage3Pointers = ele.child(11).text();
+                String rebounds = ele.child(17).text();
 
 
                 if(points.contains(",")) {
@@ -79,6 +101,7 @@ public class ParsingNBA {
                 Plist.add(obj);
                 obj.setName(namea);
                 obj.setTeam(assists);
+                obj.setRebounds(Integer.parseInt(rebounds));
                 obj.setTeam(team);
                 obj.setAssists(Integer.parseInt(assists));
                 obj.setGamesPlayed(Integer.parseInt(gamesPlayed));
@@ -96,15 +119,36 @@ public class ParsingNBA {
                 teamm.add(obj.getTeam());
                 GamesPlayedd.add(obj.getGamesPlayed());
                 MinutesPlayedd.add(obj.getMinutesPlayed());
+                reboundss.add(obj.getRebounds());
 
             }
 
-            } catch (IOException e) {
-                throw new RuntimeException(e);
             }
+        catch (MalformedURLException e) {
+            logger.error("[RUN] Problem with URL: " + url);
+
+        }
+        catch (UnknownHostException e) {
+            logger.error("Cannot connect to: " + url + " ("+e.getLocalizedMessage()+")",e);
+        }
+
+        catch (SocketTimeoutException e) {
+            logger.error("Timeout Problem with URL: " + url + "\n\t - "+e.getLocalizedMessage()+", current timeout: ");
+
+        }
+
+        catch (HttpStatusException e) {
+            logger.error("Problem with connection to: " + url + " ("+e.getLocalizedMessage()+")",e);
+        }
+
+        catch (NoRouteToHostException e) {
+            logger.error("Problem with connection to: " + url + " ("+e.getLocalizedMessage()+")",e);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
 
-            EventQueue.invokeLater(new Runnable() {
+        EventQueue.invokeLater(new Runnable() {
                 @Override
                 public void run() {
 
@@ -112,10 +156,11 @@ public class ParsingNBA {
                         UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                     } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | UnsupportedLookAndFeelException ex) {
                         ex.printStackTrace();
+                        logger.error("wystąpił bład");
                     }
 
-                    DefaultTableModel model = new DefaultTableModel(new String[]{ "Name", "Team", "Points", "Assists",
-                             "3PT", "%3PT", "GamesPlayed", "MinutesPlayed" }, 0){
+                    DefaultTableModel model = new DefaultTableModel(new String[]{ "Name", "Team", "Points", "Assists", "Rebounds",
+                             "3PT", "%3PT", "Games", "MinutesPlayed" }, 0){
                         @Override
                         public Class<?> getColumnClass(int column)
                         {
@@ -137,44 +182,91 @@ public class ParsingNBA {
 
                     for(int i= 0; i<pointss.size()-1;i++) {
 
-                        model.addRow(new Object[]{ namess.get(i), teamm.get(i), pointss.get(i),  assistss.get(i),
+                        model.addRow(new Object[]{ namess.get(i), teamm.get(i), pointss.get(i),  assistss.get(i), reboundss.get(i),
                                  Threeptss.get(i), PercThreePtss.get(i)+ "%", GamesPlayedd.get(i), MinutesPlayedd.get(i)});
+
                     }
 
                     JTable table = new JTable(model);
                     TableRowSorter<TableModel> sorter = new TableRowSorter<TableModel>(table.getModel());
                     table.setRowSorter(sorter);
+                    table.setRowHeight(30);
 
+
+                    table.addMouseListener(new java.awt.event.MouseAdapter() {
+                        @Override
+                        public void mouseClicked(java.awt.event.MouseEvent evt) {
+                            int row = table.rowAtPoint(evt.getPoint());
+                            int col = table.columnAtPoint(evt.getPoint());
+
+                            if (row >= 0 && col >= 0) {
+                                logger.info("Pressed row:"+row +" and column:" +col );
+                            }
+                        }
+                    });
+                    DefaultTableCellRenderer intRenderer = (DefaultTableCellRenderer)
+                            table.getDefaultRenderer(Integer.class);
+                    intRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+                    DefaultTableCellRenderer floatRenderer = (DefaultTableCellRenderer)
+                            table.getDefaultRenderer(Float.class);
+                    floatRenderer.setHorizontalAlignment(SwingConstants.LEFT);
+
+                    DefaultTableCellRenderer stringRenderer = (DefaultTableCellRenderer)
+                            table.getDefaultRenderer(String.class);
+                    stringRenderer.setHorizontalAlignment(SwingConstants.LEFT);
 
                     List<RowSorter.SortKey> sortKeys = new ArrayList<>(400);
-                    sortKeys.add(new RowSorter.SortKey(2, SortOrder.DESCENDING));
+                    logger.trace(sortKeys.add(new RowSorter.SortKey(2, SortOrder.DESCENDING)));
                     sorter.setSortKeys(sortKeys);
-
+                    for(int t=0;t<10;t++) {
+                        Props.put(String.valueOf(t), String.valueOf(table.getValueAt(t, 0)));
+                    }
+                    try {
+                        Props.store(new FileOutputStream("Pprop.properties"),null);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                     JFrame frame = new JFrame(" NBA ");
                     frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
                     frame.add(new JScrollPane(table));
                     TableColumn column;
-                    for (int i = 0; i < 7; i++) {
+                    TableView.TableRow row;
+                    for (int i = 0; i < 9; i++) {
+
                         column = table.getColumnModel().getColumn(i);
                         column.setResizable(false);
                         if(i==0){
-                            column.setPreferredWidth(120);
+                            table.setFont(new Font("Arial", Font.BOLD, 14));
+                            column.setPreferredWidth(200);
                             column.setResizable(false);
 
                         }
+                        else if(i ==8){
+                            column.setResizable(false);
+                            column.setPreferredWidth(120);
+                        }
+                        else if(i ==4){
+                            column.setResizable(false);
+                            column.setPreferredWidth(65);
+                        }
+                        else if(i ==7){
+                            column.setResizable(false);
+                            column.setPreferredWidth(55);
+                        }
                         else {
-                            column.setPreferredWidth(44);
+                            column.setPreferredWidth(54);
                         }
                     }
                     table.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
                     frame.pack();
+                    frame.setSize(700,500);
                     frame.setResizable(false);
                     frame.setLocationRelativeTo(null);
                     frame.setVisible(true);
                 }
             });
         }
-
 
 
 }

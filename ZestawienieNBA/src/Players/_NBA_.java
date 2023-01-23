@@ -8,6 +8,8 @@ public class _NBA_ {
 
     private String name;
     private String team;
+
+    private int rebounds;
     private int gamesPlayed;
     private float minutesPlayed;
     private int points;
@@ -30,6 +32,14 @@ public class _NBA_ {
 
     public String getTeam() {
         return team;
+    }
+
+    public int getRebounds() {
+        return rebounds;
+    }
+
+    public void setRebounds(int rebounds) {
+        this.rebounds = rebounds;
     }
 
     public void setTeam(String team) {
@@ -94,4 +104,5 @@ public class _NBA_ {
                 ", Minutes Played: " +minutesPlayed+
                 '}';
     }
+
 }
